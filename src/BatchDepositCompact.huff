@@ -1,0 +1,155 @@
+/// @title Batch Deposit
+/// @notice SPDX-License-Identifier: MIT
+/// @author 0xvv <https://github.com/0xvv>
+/// @notice Gas efficient batch deposit contract for ETH staking
+
+#include "../lib/huffmate/src/utils/Errors.huff"
+#include "../lib/huffmate/src/utils/Calls.huff"
+
+#define function deposit(bytes) payable returns ()
+
+#define constant ETHER_32 = 0x1bc16d674ec800000
+
+#define constant PUBKEY_LEN = 0x30
+#define constant WITHDCRED_LEN = 0x20
+#define constant SIGNATURE_LEN = 0x60
+#define constant DATA_ROOT_LEN = 0x20
+#define constant DEPOSIT_LEN = 0xd0 // PUBKEY_LEN + WITHDCRED_LEN + SIGNATURE_LEN + DATA_ROOT_LEN
+
+// offsets for TEMPLATE_CALLDATA
+#define constant DATAROOT_MEM_OFFSET = 0x64
+#define constant PUBKEY_MEM_OFFSET = 0xa4
+#define constant WITHDCRED_MEM_OFFSET = 0x104
+#define constant SIGNATURE_MEM_OFFSET = 0x144
+
+#define table TEMPLATE_CALLDATA {
+  0x22895118000000000000000000000000000000000000000000000000000000000000008000000000000000000000000000000000000000000000000000000000000000e000000000000000000000000000000000000000000000000000000000000001200000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000003000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000060
+}
+
+// No need for function selector we assume the call is to batch deposit
+#define macro MAIN() = takes(0) returns(0) {
+
+    // checking pubkeys length is the expected length and count > 0
+    0x24 calldataload           // [deposit_length]
+    [DEPOSIT_LEN]               // [DEPOSIT_LEN, deposit_length]
+    dup1 dup3                   // [deposit_length, DEPOSIT_LEN, DEPOSIT_LEN, deposit_length]
+    mod                         // [deposit_length % DEPOSIT_LEN, DEPOSIT_LEN, deposit_length]
+    fail jumpi                  // revert if not equal to 0 [DEPOSIT_LEN, deposit_length]
+    swap1                       // [deposit_length, DEPOSIT_LEN]
+    div                         // [deposit_count]
+    dup1                        // [deposit_count, deposit_count]
+    iszero fail jumpi           // revert if zero [deposit_count]
+
+    // check the deposit amount is correct (32 * deposit_count)
+    dup1                        // [deposit_count, deposit_count]
+    [ETHER_32] mul              // [deposit_count * ETHER_32, deposit_count]
+    callvalue                   // [msg.value, deposit_count * ETHER_32, deposit_count]
+    eq iszero fail jumpi        // revert if not equal [deposit_count]
+
+    0x44                        // [pubkey_start, pubkey_count] 
+
+    __tablesize(TEMPLATE_CALLDATA)
+    __tablestart(TEMPLATE_CALLDATA)
+    0x00 
+    codecopy                 // copy the template calldata stored after the bytecode, not consumed or cleared by CALL() so it's reused
+
+    0x00                    // [i, pubkey_start, pubkey_count]
+    loop:
+        dup3 dup2           // [i, pubkey_count, i, pubkey_start, pubkey_count]
+        lt                  // [i < pubkey_count, i, pubkey_start, pubkey_count]
+        iszero finish jumpi // jump to finish if i >= pubkey_count [i, pubkey_start, pubkey_count]
+
+        // copy pubkey in memory and compute withdrawal creds start
+        swap1               // [pubkey_start, i, pubkey_count]
+        [PUBKEY_LEN]        // [PUBKEY_LEN, pubkey_start, i, pubkey_count]
+        dup1                // [PUBKEY_LEN, PUBKEY_LEN, pubkey_start, i, pubkey_count]
+        dup3                // [pubkey_start, PUBKEY_LEN, PUBKEY_LEN, pubkey_start, i, pubkey_count]
+        [PUBKEY_MEM_OFFSET] // [MEM_OFFSET, pubkey_start, PUBKEY_LEN, PUBKEY_LEN, pubkey_start, i, pubkey_count]
+        calldatacopy        // [PUBKEY_LEN, pubkey_start, i, pubkey_count]
+        add                 // [withdr_cred_start, i, pubkey_count]
+
+        // copy withdrawal creds in memory
+        [WITHDCRED_LEN]         // [WITHDCRED_LEN, withdr_cred_start, i, pubkey_count]
+        dup1                    // [WITHDCRED_LEN, WITHDCRED_LEN, withdr_cred_start, i, pubkey_count]
+        dup3                    // [withdr_cred_start, WITHDCRED_LEN, WITHDCRED_LEN, withdr_cred_start, i, pubkey_count]
+        [WITHDCRED_MEM_OFFSET]  // [MEM_OFFSET, withdr_cred_start, WITHDCRED_LEN, WITHDCRED_LEN, withdr_cred_start, i, pubkey_count]
+        calldatacopy            // [WITHDCRED_LEN, withdr_cred_start, i, pubkey_count]
+        add                     // [signature_start, i, pubkey_count]
+
+        // copy signatures in memory
+        [SIGNATURE_LEN]         // [SIGNATURE_LEN, signature_start, i, pubkey_count]
+        dup1                    // [SIGNATURE_LEN, SIGNATURE_LEN, signature_start, i, pubkey_count]
+        dup3                    // [signature_start, SIGNATURE_LEN, SIGNATURE_LEN, signature_start, i, pubkey_count]
+        [SIGNATURE_MEM_OFFSET]  // [MEM_OFFSET, signature_start, SIGNATURE_LEN, SIGNATURE_LEN, signature_start, i, pubkey_count]
+        calldatacopy            // [SIGNATURE_LEN, signature_start, i, pubkey_count]
+        add                     // [data_root_start, i, pubkey_count]
+
+        // copy data root in memory
+        [DATA_ROOT_LEN]         // [DATA_ROOT_LEN, data_root_start, i, pubkey_count]
+        dup1                    // [DATA_ROOT_LEN, DATA_ROOT_LEN, data_root_start, i, pubkey_count]
+        dup3                    // [data_root_start, DATA_ROOT_LEN, DATA_ROOT_LEN, data_root_start, i, pubkey_count]
+        [DATAROOT_MEM_OFFSET]   // [MEM_OFFSET, data_root_start, DATA_ROOT_LEN, DATA_ROOT_LEN, data_root_start, i, pubkey_count]
+        calldatacopy            // [DATA_ROOT_LEN, data_root_start, i, pubkey_count]
+        add                     // [next_pubkey_start, i, pubkey_count]
+
+        //  calldata len v            v 32 ether           v Deposit contract address                  v 65,535 gas
+        CALL(0x00, 0x00, 0x1e4, 0x00, 0x1bc16d674ec800000, 0x00000000219ab540356cbb839cbe05303d7705fa, 0xFFFF)
+        iszero fail jumpi    // jump to fail if call failed
+        // increment i
+        swap1 0x01 add       // [i+1, next_pubkey_start, pubkey_count]
+
+        loop jump
+    finish:
+        0x00 0x00 return
+
+    fail: 
+        0x00 0x00 revert
+}
+
+
+/* expected calldata to this contract with 1 validator
+concatanation of public key, withdrawal cred, signature, deposit data root
+
+-> % c cd 'deposit(bytes)' 0xadf1993ae1b10e580cedde629210792dba6dbb6489736e9300467c4373c73f3f03ac15ce3e7ac72282879e8dda4684f600bad2ba77e455948fe647461b335fa2d8e9d3fd36bd671754c6aafb65c886f888a94fbeb921a2acbe9cfae04f7694c57104d386ef799549582ca4986d8cb9d671b7b482146b83708ee3037409dda59b16d3f955c1bd08d0483affd1bcec334310f884fd2203282ddb55c55950ffff97981162ba9b7a67cb713afcc2c7fe5f2a044852b2a670ade5407e78fb2863c51de9fcb96542a07186fe3aeda6bb8a116d
+0x98b1e06a0000000000000000000000000000000000000000000000000000000000000020   0x04 Offset of bytes
+          00000000000000000000000000000000000000000000000000000000000000d0   0x24 ([0x04] + 0x04) Length of bytes
+          adf1993ae1b10e580cedde629210792dba6dbb6489736e9300467c4373c73f3f   0x44 Start of bytes
+          03ac15ce3e7ac72282879e8dda4684f600bad2ba77e455948fe647461b335fa2   
+          d8e9d3fd36bd671754c6aafb65c886f888a94fbeb921a2acbe9cfae04f7694c5   
+          7104d386ef799549582ca4986d8cb9d671b7b482146b83708ee3037409dda59b
+          16d3f955c1bd08d0483affd1bcec334310f884fd2203282ddb55c55950ffff97
+          981162ba9b7a67cb713afcc2c7fe5f2a044852b2a670ade5407e78fb2863c51d
+          e9fcb96542a07186fe3aeda6bb8a116d00000000000000000000000000000000
+
+
+"deposit(bytes,bytes,bytes,bytes32)" 
+real examples :
+  0x228951180000000000000000000000000000000000000000000000000000000000000080 offset PUBKEY                // 0x04
+            00000000000000000000000000000000000000000000000000000000000000e0 offset WITHDRAWAL_CRED       // 0x24
+            0000000000000000000000000000000000000000000000000000000000000120 offset SIGNATURE             // 0x44
+            06fd86fa59bd643d7e30b0c7be1bbf6fcde4c8dce5cbbf3030cf0ed8f067fa53 DEPOSIT_DATA_ROOT (32 bytes) // 0x64
+            0000000000000000000000000000000000000000000000000000000000000030 PUBKEY_LEN                   // 0x84
+            adf1993ae1b10e580cedde629210792dba6dbb6489736e9300467c4373c73f3f PUBLIC_KEY (48 bytes)        // 0xa4
+            03ac15ce3e7ac72282879e8dda4684f600000000000000000000000000000000 ^                            // 0xc4
+            0000000000000000000000000000000000000000000000000000000000000020 WITHDRAWAL_CREDS_LEN         // 0xe4
+            00bad2ba77e455948fe647461b335fa2d8e9d3fd36bd671754c6aafb65c886f8 WITHDRAWAL_CREDS (32 bytes)  // 0x104
+            0000000000000000000000000000000000000000000000000000000000000060 SIGNATURE_LEN                // 0x124
+            88a94fbeb921a2acbe9cfae04f7694c57104d386ef799549582ca4986d8cb9d6 SIGNATURE (96 bytes)         // 0x144
+            71b7b482146b83708ee3037409dda59b16d3f955c1bd08d0483affd1bcec3343 ^                            // 0x164
+            10f884fd2203282ddb55c55950ffff97981162ba9b7a67cb713afcc2c7fe5f2a ^                            // 0x184
+                                                                                                          // 0x1a4 total length 420 bytes
+
+  0x228951180000000000000000000000000000000000000000000000000000000000000080
+            00000000000000000000000000000000000000000000000000000000000000e0
+            0000000000000000000000000000000000000000000000000000000000000120
+            51ec166823079379055f1c1845be0a5f78d08299e95088aaa9d20b787e7eb464
+            0000000000000000000000000000000000000000000000000000000000000030
+            95dbc8eba0bc56c073daeb40ea12ee556498f7f6dd79b1ece77fb37e5bb87110
+            be6b047c48f6c6e77fda9d72716f158d00000000000000000000000000000000
+            0000000000000000000000000000000000000000000000000000000000000020
+            010000000000000000000000e839a3e9efb32c6a56ab7128e51056585275506c
+            0000000000000000000000000000000000000000000000000000000000000060
+            b757a3b22cb3dd15c40976e6d5a6198f0d4cccafaf443583730de1c553844308
+            e63761a3fb73252d54f1909e604309c90c5f728ade49c087728c6f364bdf35b9
+            d23c9769b0230dc345f644e13ccf82d627a086ac0cdfb6c9ed25ad5d16ef5303
+*/
