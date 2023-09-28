@@ -3,6 +3,7 @@ pragma solidity 0.8.20;
 import {HuffDeployer} from "foundry-huff/HuffDeployer.sol";
 import "forge-std/Test.sol";
 import "./mock//DepositContractTestable.sol";
+import "./mock/DepositContractNoop.sol";
 import "./utils/BytesGenerator.sol";
 import "../src/lib/LibBytes.sol";
 
@@ -16,7 +17,7 @@ contract BatchDepositHuffTest is Test, BytesGenerator {
     address constant officialDepositContract = 0x00000000219ab540356cBB839Cbe05303d7705Fa;
 
     DepositContractTestable huffDepMock = DepositContractTestable(officialDepositContract);
-    DepositContractTestable implem = new DepositContractTestable();
+    DepositContractNoop implem = new DepositContractNoop();
 
     function deployHuff() public {
         vm.etch(officialDepositContract, address(implem).code);
@@ -61,13 +62,13 @@ contract BatchDepositHuffTest is Test, BytesGenerator {
         }
         bytes memory args = new bytes(0);
         for (uint256 i = 0; i < COUNT; i++) {
-            args = bytes.concat(args, pubkeys[i]);
-            args = bytes.concat(args, withdrawal_credentials[i]);
-            args = bytes.concat(args, signatures[i]);
+            args = bytes.concat(args, pubkeysList[i]);
+            args = bytes.concat(args, withdrawalCredentialsList[i]);
+            args = bytes.concat(args, signaturesList[i]);
             args = bytes.concat(args, deposit_data_roots[i]);
         }
 
-        vm.deal(address(this), 32 ether * COUNT);
+        console2.log(args.length);        vm.deal(address(this), 32 ether * COUNT);
 
         // HUFF
         huffbdo.deposit{value: 32 ether * COUNT}(args);

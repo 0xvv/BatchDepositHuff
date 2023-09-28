@@ -30,12 +30,12 @@
 #define macro MAIN() = takes(0) returns(0) {
 
     // checking pubkeys length is the expected length and count > 0
-    0x24 calldataload           // [deposit_length]
-    [DEPOSIT_LEN]               // [DEPOSIT_LEN, deposit_length]
-    dup1 dup3                   // [deposit_length, DEPOSIT_LEN, DEPOSIT_LEN, deposit_length]
-    mod                         // [deposit_length % DEPOSIT_LEN, DEPOSIT_LEN, deposit_length]
-    fail jumpi                  // revert if not equal to 0 [DEPOSIT_LEN, deposit_length]
-    swap1                       // [deposit_length, DEPOSIT_LEN]
+    0x24 calldataload           // [deposits_length]
+    [DEPOSIT_LEN]               // [DEPOSIT_LEN, deposits_length]
+    dup1 dup3                   // [deposits_length, DEPOSIT_LEN, DEPOSIT_LEN, deposits_length]
+    mod                         // [deposits_length % DEPOSIT_LEN, DEPOSIT_LEN, deposits_length]
+    fail jumpi                  // revert if not equal to 0 [DEPOSIT_LEN, deposits_length]
+    swap1                       // [deposits_length, DEPOSIT_LEN]
     div                         // [deposit_count]
     dup1                        // [deposit_count, deposit_count]
     iszero fail jumpi           // revert if zero [deposit_count]
