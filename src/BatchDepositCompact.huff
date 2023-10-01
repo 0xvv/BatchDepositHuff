@@ -1,4 +1,4 @@
-/// @title Batch Deposit
+/// @title Batch Deposit Compact
 /// @notice SPDX-License-Identifier: MIT
 /// @author 0xvv <https://github.com/0xvv>
 /// @notice Gas efficient batch deposit contract for ETH staking

@@ -1,5 +1,7 @@
 ## Batch deposit Huff
 
+This repo contains 2 smart contracts that allow to batch deposit validators in the beacon chain deposit contract.
+
 ### Requirements
 
 The following will need to be installed in order to use this repo.
@@ -27,16 +29,16 @@ If you wish to deploy the contract, on a testnet you have to change the hard-cod
 ``` 
 anySignature(bytes pubkeys, bytes withdrawal_creds, bytes signatures, bytes32[] deposit_data_roots)
 ```
-`pubkeys` : concatenation of the public keys of the validators
-`withdrawal_creds` : concatenation of the withdrawal credentials of the validators
-`signatures` : concatenation of the signatures of the validators
-`deposit_data_roots` : concatenation of the deposit data roots of the validators
+- `pubkeys` : concatenation of the public keys of the validators
+- `withdrawal_creds` : concatenation of the withdrawal credentials of the validators
+- `signatures` : concatenation of the signatures of the validators
+- `deposit_data_roots` : concatenation of the deposit data roots of the validators
 
 ### HuffCompact interface :
 ```
 any_signature(bytes data) 
 ```
-`data` : concatenation of the concatenations of the pubkey, withdrawal_cred, signature and deposit_data_root of each validator
+- `data` : concatenation of the concatenations of the pubkey, withdrawal_cred, signature and deposit_data_root of each validator
 
 ## Benchmark
 Ran against a fork at block `18255674`
