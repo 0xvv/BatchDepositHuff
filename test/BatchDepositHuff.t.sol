@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 pragma solidity 0.8.20;
 
 import {HuffDeployer} from "foundry-huff/HuffDeployer.sol";
@@ -81,13 +82,13 @@ contract BatchDepositHuffTest is Test, BytesGenerator {
 
         vm.deal(address(this), 32 ether * COUNT);
 
-        for(uint256 i = 0; i < COUNT; i++) {
+        for (uint256 i = 0; i < COUNT; i++) {
             vm.expectEmit(true, true, true, true);
             emit DepositEvent(pubkeysList[i], withdrawalCredentialsList[i], signaturesList[i], deposit_data_roots[i]);
         }
 
         huffCompact.deposit{value: 32 ether * COUNT}(args);
-        
+
         checkDepositCount(COUNT);
     }
 
@@ -112,21 +113,15 @@ contract BatchDepositHuffTest is Test, BytesGenerator {
 
         vm.deal(address(this), 32 ether * COUNT);
 
-        for(uint256 i = 0; i < COUNT; i++) {
+        for (uint256 i = 0; i < COUNT; i++) {
             vm.expectEmit(true, true, true, true);
             emit DepositEvent(pubkeysList[i], withdrawalCredentialsList[i], signaturesList[i], deposit_data_roots[i]);
         }
 
         huffClassic.deposit{value: 32 ether * COUNT}(pubkeys, withdrawal_credentials, signatures, deposit_data_roots);
-        
+
         checkDepositCount(COUNT);
     }
 
-
-    event DepositEvent(
-        bytes pubkey,
-        bytes withdrawal_credentials,
-        bytes signature,
-        bytes32 deposit_data_root
-    );
+    event DepositEvent(bytes pubkey, bytes withdrawal_credentials, bytes signature, bytes32 deposit_data_root);
 }

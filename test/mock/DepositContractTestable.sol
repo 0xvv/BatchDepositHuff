@@ -13,7 +13,6 @@ pragma solidity >=0.8.17;
 import "../../src/interface/IDeposit.sol";
 
 contract DepositContractTestable is IDeposit {
-
     uint256 public deposit_count;
 
     bytes32[] public depositDataRoots;
@@ -21,12 +20,7 @@ contract DepositContractTestable is IDeposit {
     bytes[] public depositWithdrawalCredentials;
     bytes[] public depositSignatures;
 
-    event DepositEvent(
-        bytes pubkey,
-        bytes withdrawal_credentials,
-        bytes signature,
-        bytes32 deposit_data_root
-    );
+    event DepositEvent(bytes pubkey, bytes withdrawal_credentials, bytes signature, bytes32 deposit_data_root);
 
     function deposit(
         bytes calldata pubkey,

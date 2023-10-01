@@ -1,4 +1,4 @@
-## Getting Started
+## Batch deposit Huff
 
 ### Requirements
 
@@ -36,7 +36,7 @@ anySignature(bytes pubkeys, bytes withdrawal_creds, bytes signatures, bytes32[] 
 ```
 any_signature(bytes data) 
 ```
-`data` : concatenation of the pubkeys, withdrawal_creds, signatures and deposit_data_roots of the validators
+`data` : concatenation of the concatenations of the pubkey, withdrawal_cred, signature and deposit_data_root of each validator
 
 ## Benchmark
 Ran against a fork at block `18255674`
@@ -91,13 +91,27 @@ Ran against a fork at block `18255674`
 200  => 6631612
 ```
 
-HuffCompact is 18.4 % more efficient than the given solidity implementation.
+### Gas savings compared to solidity implementation :
 
-HuffClassic is 18.3 % more efficient than the given solidity implementation.
-
-## License
-
-TODO
+```
+____________________________________________________________
+|   compact (%)  |  n° of validators  |    classic (%)     |
+|----------------|--------------------|--------------------|
+|      14	     |       1	          |        12.3        |
+|     15.4	     |       2	          |        14.3        |
+|     15.8	     |       3	          |        15.0        |
+|     16.6    	 |       4	          |        15.9        |
+|     16.4	     |       5	          |        15.8        |
+|     17.5	     |       10	          |        17.2        |
+|     17.6	     |       20	          |        17.4        |
+|     18.1	     |       30           | 	   17.9        |
+|     18.1	     |       40           | 	   18.0        |
+|     18.1	     |       50	          |        18.0        |
+|     18.4	     |       75           | 	   18.2        |
+|     18.3	     |       100          | 	   18.2        |
+|     18.4	     |       200          |    	   18.3        |
+------------------------------------------------------------
+``````
 
 ## Disclaimer
 
