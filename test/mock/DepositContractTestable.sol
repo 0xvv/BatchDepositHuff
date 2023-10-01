@@ -14,12 +14,7 @@ import "../../src/interface/IDeposit.sol";
 
 contract DepositContractTestable is IDeposit {
     uint256 public deposit_count;
-
-    bytes32[] public depositDataRoots;
-    bytes[] public depositPubkeys;
-    bytes[] public depositWithdrawalCredentials;
-    bytes[] public depositSignatures;
-
+    
     event DepositEvent(bytes pubkey, bytes withdrawal_credentials, bytes signature, bytes32 deposit_data_root);
 
     function deposit(
@@ -30,11 +25,6 @@ contract DepositContractTestable is IDeposit {
     ) external payable override {
         deposit_count += 1;
         emit DepositEvent(pubkey, withdrawal_credentials, signature, deposit_data_root);
-        /*
-        depositDataRoots.push(deposit_data_root);
-        depositPubkeys.push(pubkey);
-        depositWithdrawalCredentials.push(withdrawal_credentials);
-        depositSignatures.push(signature);
-        */
+
     }
 }
