@@ -1,83 +1,103 @@
-<img align="right" width="150" height="150" top="100" src="./assets/blueprint.png">
-
-# huff-project-template • [![ci](https://github.com/huff-language/huff-project-template/actions/workflows/ci.yaml/badge.svg)](https://github.com/huff-language/huff-project-template/actions/workflows/ci.yaml) ![license](https://img.shields.io/github/license/huff-language/huff-project-template.svg) ![solidity](https://img.shields.io/badge/solidity-^0.8.15-lightgrey)
-
-Versatile Huff Project Template using Foundry.
-
-
 ## Getting Started
 
 ### Requirements
 
-The following will need to be installed in order to use this template. Please follow the links and instructions.
+The following will need to be installed in order to use this repo.
 
--   [Git](https://git-scm.com/book/en/v2/Getting-Started-Installing-Git)  
-    -   You'll know you've done it right if you can run `git --version`
 -   [Foundry / Foundryup](https://github.com/gakonst/foundry)
-    -   This will install `forge`, `cast`, and `anvil`
-    -   You can test you've installed them right by running `forge --version` and get an output like: `forge 0.2.0 (92f8951 2022-08-06T00:09:32.96582Z)`
-    -   To get the latest of each, just run `foundryup`
 -   [Huff Compiler](https://docs.huff.sh/get-started/installing/)
-    -   You'll know you've done it right if you can run `huffc --version` and get an output like: `huffc 0.3.0`
 
-### Quickstart
-
-1. Clone this repo or use template
-
-Click "Use this template" on [GitHub](https://github.com/huff-language/huff-project-template) to create a new repository with this repo as the initial state.
-
-Or run:
+## Quickstart
 
 ```
-git clone https://github.com/huff-language/huff-project-template
-cd huff-project-template
-```
-
-2. Install dependencies
-
-Once you've cloned and entered into your repository, you need to install the necessary dependencies. In order to do so, simply run:
-
-```shell
 forge install
-```
-
-3. Build & Test
-
-To build and test your contracts, you can run:
-
-```shell
-forge build
 forge test
 ```
 
-For more information on how to use Foundry, check out the [Foundry Github Repository](https://github.com/foundry-rs/foundry/tree/master/forge) and the [foundry-huff library repository](https://github.com/huff-language/foundry-huff).
-
-
-## Blueprint
-
-```ml
-lib
-├─ forge-std — https://github.com/foundry-rs/forge-std
-├─ foundry-huff — https://github.com/huff-language/foundry-huff
-scripts
-├─ Deploy.s.sol — Deployment Script
-src
-├─ SimpleStore — A Simple Storage Contract in Huff
-test
-└─ SimpleStore.t — SimpleStoreTests
+To run the benchmark script :
+```
+FORK_URL=$ETH_RPC_URL make benchmark
 ```
 
+## Usage
+Only the arguments encoding matter, the signature is not checked.
+If you wish to deploy the contract, on a testnet you have to change the hard-coded deposit contract address in the contract.
+
+### HuffClassic interface :
+``` 
+anySignature(bytes pubkeys, bytes withdrawal_creds, bytes signatures, bytes32[] deposit_data_roots)
+```
+`pubkeys` : concatenation of the public keys of the validators
+`withdrawal_creds` : concatenation of the withdrawal credentials of the validators
+`signatures` : concatenation of the signatures of the validators
+`deposit_data_roots` : concatenation of the deposit data roots of the validators
+
+### HuffCompact interface :
+```
+any_signature(bytes data) 
+```
+`data` : concatenation of the pubkeys, withdrawal_creds, signatures and deposit_data_roots of the validators
+
+## Benchmark
+Ran against a fork at block `18255674`
+### Benchmark results HuffCompact :
+```
+1    => 65605
+2    => 91302
+3    => 120344
+4    => 144104
+5    => 176922
+10   => 307011
+20   => 589729
+30   => 845282
+40   => 1118022
+50   => 1393065
+75   => 2050698
+100  => 2726240
+200  => 5411233
+```
+
+### Benchmark results HuffClassic :
+```
+1    => 66730
+2    => 92441
+3    => 121521
+4    => 145307
+5    => 178163
+10   => 308406
+20   => 591372
+30   => 847197
+40   => 1120173
+50   => 1395488
+75   => 2053783
+100  => 2729963
+200  => 5417544
+```
+
+### Benchmark results [Solidity](https://etherscan.io/address/0x9b8c989FF27e948F55B53Bb19B3cC1947852E394#code) :
+```
+1    => 76074
+2    => 107877
+3    => 142933
+4    => 172835
+5    => 211715
+10   => 372342
+20   => 715792
+30   => 1032305
+40   => 1365669
+50   => 1701816
+75   => 2511743
+100  => 3338663
+200  => 6631612
+```
+
+HuffCompact is 18.4 % more efficient than the given solidity implementation.
+
+HuffClassic is 18.3 % more efficient than the given solidity implementation.
 
 ## License
 
-[The Unlicense](https://github.com/huff-language/huff-project-template/blob/master/LICENSE)
-
-
-## Acknowledgements
-
-- [forge-template](https://github.com/foundry-rs/forge-template)
-- [femplate](https://github.com/abigger87/femplate)
-
+TODO
 
 ## Disclaimer
 
